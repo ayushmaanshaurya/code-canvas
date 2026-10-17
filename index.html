@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="en" class="dark h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CodeCanvas - Code Snippet Showcase</title>
+    <meta
+      name="description"
+      content="A cyber-minimalist full-stack code snippet showcase application with real-time filtering, live playground runner, command palette, and interactive sharing."
+    />
+    <meta property="og:title" content="CodeCanvas - Code Snippet Showcase" />
+    <meta
+      property="og:description"
+      content="A cyber-minimalist full-stack code snippet showcase application with real-time filtering, live playground runner, command palette, and interactive sharing."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Plus Jakarta Sans for UI & Fira Code for Code Blocks -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS CDN for rapid cyber-minimalist layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              cyber: {
+                bg: '#0B0F19',
+                card: '#161D2F',
+                border: '#24324D',
+                teal: '#00E5FF',
+                hover: '#1D273E',
+                textMuted: '#8E9BB5',
+                cyanDim: 'rgba(0, 229, 255, 0.12)',
+              },
+            },
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+              mono: ['Fira Code', 'JetBrains Mono', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        background-color: #0B0F19;
+        color: #E2E8F0;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      }
+      pre, code, .font-code {
+        font-family: 'Fira Code', monospace;
+      }
+      /* Custom thin cyber scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0B0F19;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #24324D;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #00E5FF;
+      }
+      /* Syntax token highlight classes */
+      .token-keyword { color: #00E5FF; font-weight: 500; }
+      .token-function { color: #7DD3FC; }
+      .token-string { color: #86EFAC; }
+      .token-number { color: #FCA5A5; }
+      .token-comment { color: #64748B; font-style: italic; }
+      .token-property { color: #FDE047; }
+      .token-punctuation { color: #94A3B8; }
+    </style>
+  </head>
+
+  <body class="min-h-full flex flex-col bg-[#0B0F19] text-slate-100 selection:bg-[#00E5FF]/20 selection:text-[#00E5FF]">
+    <!-- Top Navigation Bar (Strict 3-Zone Top Bar Contract) -->
+    <header class="sticky top-0 z-40 w-full border-b border-[#24324D] bg-[#0B0F19]/90 backdrop-blur-md px-4 sm:px-6 py-3.5">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-8">
+        
+        <!-- Zone 1: Single element Wordmark -->
+        <a href="/" class="flex items-center gap-2.5 whitespace-nowrap shrink-0 group focus:outline-none">
+          <div class="w-8 h-8 rounded-lg bg-[#161D2F] border border-[#24324D] flex items-center justify-center text-[#00E5FF] group-hover:border-[#00E5FF]/60 transition-colors shadow-[0_0_15px_rgba(0,229,255,0.15)]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </div>
+          <span class="text-lg font-bold tracking-tight text-white group-hover:text-[#00E5FF] transition-colors">
+            Code<span class="text-[#00E5FF]">Canvas</span>
+          </span>
+        </a>
+
+        <!-- Zone 2: Navigation Links -->
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-400">
+          <button id="nav-all-snippets" class="text-white hover:text-[#00E5FF] transition-colors whitespace-nowrap shrink-0 focus:outline-none">
+            All Snippets
+          </button>
+          <button id="nav-trending-snippets" class="hover:text-white transition-colors whitespace-nowrap shrink-0 focus:outline-none">
+            Trending
+          </button>
+          <button id="nav-bookmarks" class="hover:text-white transition-colors whitespace-nowrap shrink-0 focus:outline-none flex items-center gap-1.5">
+            <span>Bookmarks</span>
+            <span id="nav-bookmark-count" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#24324D] text-[#00E5FF] tabular-nums">0</span>
+          </button>
+          <a href="#quick-docs" id="nav-open-docs" class="hover:text-white transition-colors whitespace-nowrap shrink-0">
+            API Specs
+          </a>
+        </nav>
+
+        <!-- Zone 3: Interactive Action Zone -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          <!-- Export Dropdown Button -->
+          <div class="relative group/export">
+            <button
+              id="export-menu-btn"
+              type="button"
+              class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#161D2F] border border-[#24324D] hover:border-[#00E5FF]/50 text-xs text-slate-300 hover:text-white transition-colors focus:outline-none"
+              title="Export Snippets"
+            >
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Export</span>
+            </button>
+            <div class="absolute right-0 mt-1 w-44 rounded-xl bg-[#161D2F] border border-[#24324D] shadow-xl py-1 hidden group-hover/export:block z-50 animate-in fade-in duration-100">
+              <button id="export-json-btn" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-[#1D273E] hover:text-[#00E5FF] transition-colors flex items-center gap-2">
+                <span class="font-mono text-[10px] text-slate-500">JSON</span>
+                <span>Download All (.json)</span>
+              </button>
+              <button id="export-markdown-btn" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-[#1D273E] hover:text-[#00E5FF] transition-colors flex items-center gap-2">
+                <span class="font-mono text-[10px] text-slate-500">MD</span>
+                <span>Export Markdown (.md)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Command Palette Trigger Button -->
+          <button
+            id="open-cmd-palette-btn"
+            type="button"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#161D2F] border border-[#24324D] hover:border-[#00E5FF]/50 text-xs text-slate-400 hover:text-white transition-all focus:outline-none focus:border-[#00E5FF]"
+            title="Search snippets (Cmd + K / Ctrl + K)"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span class="hidden sm:inline">Search</span>
+            <kbd class="px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-[#0B0F19] rounded border border-[#24324D]">
+              <span id="cmd-key-symbol">⌘</span>K
+            </kbd>
+          </button>
+
+          <!-- Code Studio / Compiler Button -->
+          <button
+            id="open-studio-btn"
+            type="button"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161D2F] border border-[#24324D] hover:border-[#00E5FF]/60 text-xs text-[#00E5FF] hover:text-[#33EAFF] transition-all whitespace-nowrap shrink-0 focus:outline-none"
+            title="Open Interactive Code Studio & Compiler"
+          >
+            <span class="text-sm">⚡</span>
+            <span class="hidden sm:inline font-medium">Compiler Studio</span>
+          </button>
+
+          <!-- Primary Action Button: Add Snippet Modal -->
+          <button
+            id="open-add-modal-btn"
+            type="button"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-[#0B0F19] bg-[#00E5FF] hover:bg-[#33EAFF] active:scale-[0.98] rounded-lg transition-all shadow-[0_0_12px_rgba(0,229,255,0.25)] whitespace-nowrap shrink-0 focus:outline-none"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>New Snippet</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-6">
+      
+      <!-- Left Sidebar: Filter Pills & Real-time Filter Search Bar -->
+      <aside class="w-full lg:w-64 shrink-0 space-y-6">
+        <!-- Search Input Box -->
+        <div class="p-4 rounded-xl bg-[#161D2F] border border-[#24324D] shadow-sm">
+          <label for="sidebar-search-input" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            Real-time Filter
+          </label>
+          <div class="relative">
+            <input
+              id="sidebar-search-input"
+              type="text"
+              placeholder="Filter title, code, tag..."
+              class="w-full bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg px-3 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+            />
+            <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <button id="clear-search-btn" class="hidden absolute right-2.5 top-2.5 text-slate-500 hover:text-white" title="Clear search">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Pills Section (Interactive Segmented Controls) -->
+        <div class="p-4 rounded-xl bg-[#161D2F] border border-[#24324D]">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Categories</span>
+            <button id="reset-filter-btn" class="text-[11px] text-[#00E5FF] hover:underline focus:outline-none">
+              Reset
+            </button>
+          </div>
+
+          <div id="filter-pills-container" class="flex flex-wrap lg:flex-col gap-1.5">
+            <!-- Dynamically populated from API & bookmarks -->
+            <button data-tag="All" class="filter-tag-btn active w-full flex items-center justify-between px-3 py-1.5 text-xs rounded-lg transition-colors bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 font-medium">
+              <span>All Snippets</span>
+              <span id="stat-total-count" class="font-mono text-[11px] tabular-nums text-slate-400">0</span>
+            </button>
+            <button data-tag="__bookmarks__" class="filter-tag-btn w-full flex items-center justify-between px-3 py-1.5 text-xs rounded-lg transition-colors text-slate-300 hover:bg-[#1D273E] border border-transparent">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span>Bookmarks</span>
+              </span>
+              <span id="sidebar-bookmark-count" class="font-mono text-[11px] tabular-nums text-slate-400">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Telemetry & Shortcuts Guide -->
+        <div class="p-4 rounded-xl bg-[#161D2F] border border-[#24324D] text-xs text-slate-400 space-y-3">
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Developer Shortcuts</div>
+          <div class="flex items-center justify-between">
+            <span>Command Palette</span>
+            <kbd class="px-1.5 py-0.5 font-mono text-[10px] bg-[#0B0F19] text-slate-300 rounded border border-[#24324D]">⌘K</kbd>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>Create New</span>
+            <kbd class="px-1.5 py-0.5 font-mono text-[10px] bg-[#0B0F19] text-slate-300 rounded border border-[#24324D]">N</kbd>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>Dismiss Modals</span>
+            <kbd class="px-1.5 py-0.5 font-mono text-[10px] bg-[#0B0F19] text-slate-300 rounded border border-[#24324D]">ESC</kbd>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Canvas: Dynamic Multi-Column Grid Layout -->
+      <main class="flex-1 min-w-0">
+        <!-- Canvas Status & Sort Header Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-[#24324D]">
+          <div>
+            <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              <span id="canvas-active-filter-label">All Code Snippets</span>
+              <span id="canvas-snippet-count" class="text-xs font-normal text-slate-400 px-2 py-0.5 rounded bg-[#161D2F] border border-[#24324D] font-mono tabular-nums">
+                Loading...
+              </span>
+            </h1>
+            <p id="canvas-active-subtext" class="text-xs text-slate-400 mt-0.5">
+              Curated modular solutions, live playground runner, & community forks
+            </p>
+          </div>
+
+          <!-- Sort Select & View Mode Toggle Controls -->
+          <div class="flex items-center gap-3 self-start sm:self-auto">
+            <!-- View Mode Switcher -->
+            <div class="flex items-center p-0.5 rounded-lg bg-[#161D2F] border border-[#24324D]">
+              <button
+                id="view-grid-btn"
+                type="button"
+                class="p-1.5 rounded-md text-[#00E5FF] bg-[#0B0F19] focus:outline-none transition-colors"
+                title="Grid View"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                id="view-list-btn"
+                type="button"
+                class="p-1.5 rounded-md text-slate-400 hover:text-white focus:outline-none transition-colors"
+                title="Compact List View"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-slate-400 whitespace-nowrap">Sort:</span>
+              <select
+                id="sort-select"
+                class="bg-[#161D2F] border border-[#24324D] text-xs text-slate-200 rounded-lg px-2.5 py-1.5 focus:border-[#00E5FF] focus:outline-none"
+              >
+                <option value="recent">Newest First</option>
+                <option value="likes">Most Liked</option>
+                <option value="title">Alphabetical (A-Z)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Column Dynamic Grid Layout -->
+        <div
+          id="snippets-grid"
+          class="grid grid-cols-1 md:grid-cols-2 gap-5 min-h-[300px]"
+          aria-live="polite"
+        >
+          <!-- Dynamically populated via fetchSnippets() in script.js -->
+        </div>
+
+        <!-- Empty State Container (Hidden by default) -->
+        <div
+          id="empty-state"
+          class="hidden flex-col items-center justify-center p-12 text-center rounded-xl bg-[#161D2F] border border-[#24324D] mt-4"
+        >
+          <div class="w-12 h-12 rounded-xl bg-[#0B0F19] border border-[#24324D] flex items-center justify-center text-slate-400 mb-4">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-white">No snippets found</h3>
+          <p class="text-xs text-slate-400 max-w-sm mt-1 mb-5">
+            No snippets match your current search criteria or category filter. You can publish one or reset your query.
+          </p>
+          <button
+            id="empty-state-reset-btn"
+            type="button"
+            class="px-4 py-2 text-xs font-semibold text-[#0B0F19] bg-[#00E5FF] rounded-lg hover:bg-[#33EAFF] transition-colors focus:outline-none"
+          >
+            Reset Filters
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <!-- Floating Action Button (FAB) to trigger Add Snippet Form -->
+    <button
+      id="fab-add-btn"
+      type="button"
+      class="fixed bottom-6 right-6 z-30 flex items-center justify-center w-12 h-12 rounded-full bg-[#00E5FF] text-[#0B0F19] shadow-[0_0_20px_rgba(0,229,255,0.4)] hover:scale-105 active:scale-95 transition-all focus:outline-none group"
+      title="Add new snippet (N)"
+      aria-label="Add new snippet"
+    >
+      <svg class="w-6 h-6 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+      </svg>
+    </button>
+
+    <!-- Command Palette Search Modal (Cmd + K / Ctrl + K) -->
+    <div
+      id="cmd-palette-modal"
+      class="fixed inset-0 z-50 hidden items-start justify-center pt-20 px-4 bg-[#0B0F19]/80 backdrop-blur-md transition-opacity"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        id="cmd-palette-content"
+        class="w-full max-w-xl rounded-xl bg-[#161D2F] border border-[#24324D] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        <!-- Modal Search Header -->
+        <div class="relative flex items-center border-b border-[#24324D] px-4 py-3">
+          <svg class="w-5 h-5 text-[#00E5FF] shrink-0 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            id="cmd-palette-input"
+            type="text"
+            placeholder="Type snippet name, language, or quick command..."
+            class="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
+            autocomplete="off"
+          />
+          <kbd class="text-[10px] font-mono text-slate-400 bg-[#0B0F19] px-1.5 py-0.5 rounded border border-[#24324D]">ESC</kbd>
+        </div>
+
+        <!-- Quick Results List -->
+        <div id="cmd-results-list" class="max-h-80 overflow-y-auto divide-y divide-[#24324D]/50 p-2">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Palette Footer -->
+        <div class="px-4 py-2 bg-[#0B0F19] border-t border-[#24324D] flex items-center justify-between text-[11px] text-slate-400">
+          <div class="flex items-center gap-3">
+            <span><kbd class="font-mono text-[10px] bg-[#161D2F] px-1 rounded border border-[#24324D]">↑</kbd> <kbd class="font-mono text-[10px] bg-[#161D2F] px-1 rounded border border-[#24324D]">↓</kbd> to navigate</span>
+            <span><kbd class="font-mono text-[10px] bg-[#161D2F] px-1 rounded border border-[#24324D]">↵</kbd> to select</span>
+          </div>
+          <span>CodeCanvas Command Shell</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add / Edit Snippet Form Modal -->
+    <div
+      id="add-snippet-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-[#0B0F19]/80 backdrop-blur-md overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="w-full max-w-2xl my-8 rounded-xl bg-[#161D2F] border border-[#24324D] shadow-2xl overflow-hidden">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-[#24324D] px-6 py-4">
+          <div>
+            <h3 id="form-modal-heading" class="text-base font-bold text-white flex items-center gap-2">
+              <span class="text-[#00E5FF]">＋</span> Publish Code Snippet
+            </h3>
+            <p id="form-modal-subtext" class="text-xs text-slate-400 mt-0.5">Post clean code directly to the in-memory engine</p>
+          </div>
+          <button id="close-add-modal-btn" type="button" class="text-slate-400 hover:text-white transition-colors focus:outline-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Form -->
+        <form id="add-snippet-form" class="p-6 space-y-4">
+          <input type="hidden" id="snippet-edit-id" name="editId" value="" />
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="snippet-title" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Snippet Title <span class="text-[#00E5FF]">*</span>
+              </label>
+              <input
+                id="snippet-title"
+                name="title"
+                type="text"
+                required
+                placeholder="e.g. GPU WebGL Fluid Shader"
+                class="w-full bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label for="snippet-lang" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Language <span class="text-[#00E5FF]">*</span>
+              </label>
+              <select
+                id="snippet-lang"
+                name="language"
+                class="w-full bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg px-3 py-2 text-xs text-white focus:outline-none transition-colors"
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+                <option value="c">C</option>
+                <option value="python">Python</option>
+                <option value="rust">Rust</option>
+                <option value="go">Go</option>
+                <option value="css">CSS / Tailwind</option>
+                <option value="html">HTML</option>
+                <option value="sql">SQL</option>
+                <option value="json">JSON</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="snippet-desc" class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Description
+            </label>
+            <input
+              id="snippet-desc"
+              name="description"
+              type="text"
+              placeholder="Short, crisp context explaining functionality..."
+              class="w-full bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="snippet-tags" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Tags (Comma-separated)
+              </label>
+              <input
+                id="snippet-tags"
+                name="tags"
+                type="text"
+                placeholder="WebGL, Performance, Canvas"
+                class="w-full bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label for="snippet-author" class="block text-xs font-semibold text-slate-300 mb-1.5">
+                Author
+              </label>
+              <input
+                id="snippet-author"
+                name="author"
+                type="text"
+                placeholder="Your Name or Handle"
+                class="w-full bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="snippet-code" class="text-xs font-semibold text-slate-300">
+                Code Block <span class="text-[#00E5FF]">*</span>
+              </label>
+              <div class="flex items-center gap-2.5">
+                <span id="code-stats-indicator" class="text-[11px] font-mono text-slate-500">0 lines · 0 chars</span>
+                <button
+                  type="button"
+                  id="format-code-btn"
+                  class="text-[11px] text-[#00E5FF] hover:underline focus:outline-none"
+                >
+                  Beautify
+                </button>
+                <button
+                  type="button"
+                  id="form-test-compile-btn"
+                  class="px-2 py-0.5 text-[11px] rounded bg-[#0B0F19] border border-[#24324D] hover:border-[#00E5FF] text-[#00E5FF] transition-colors flex items-center gap-1 focus:outline-none"
+                  title="Compile & test code before publishing"
+                >
+                  <span>⚡ Test & Compile</span>
+                </button>
+              </div>
+            </div>
+            <textarea
+              id="snippet-code"
+              name="code"
+              rows="8"
+              required
+              placeholder="// Paste clean, ready-to-run code implementation..."
+              class="w-full font-mono text-xs bg-[#0B0F19] border border-[#24324D] focus:border-[#00E5FF] rounded-lg p-3 text-slate-100 placeholder-slate-600 focus:outline-none transition-colors leading-relaxed"
+            ></textarea>
+
+            <!-- Inline Compile Output Drawer -->
+            <div id="form-compile-drawer" class="hidden mt-2 p-3 rounded-lg bg-[#0B0F19] border border-[#24324D] font-mono text-xs">
+              <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1 pb-1 border-b border-[#24324D]/60">
+                <div class="flex items-center gap-2">
+                  <span id="form-compile-status-badge" class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400">Success</span>
+                  <span id="form-compile-toolchain" class="text-slate-400">Toolchain</span>
+                </div>
+                <span id="form-compile-time" class="text-slate-500 tabular-nums">0ms</span>
+              </div>
+              <pre id="form-compile-output-text" class="text-xs text-slate-300 max-h-32 overflow-y-auto whitespace-pre-wrap leading-relaxed"></pre>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex items-center justify-between pt-3 border-t border-[#24324D]">
+            <button
+              id="delete-current-btn"
+              type="button"
+              class="hidden px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors focus:outline-none"
+            >
+              Delete Snippet
+            </button>
+            <div class="flex items-center gap-3 ml-auto">
+              <button
+                id="cancel-add-btn"
+                type="button"
+                class="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white rounded-lg hover:bg-[#0B0F19] transition-colors focus:outline-none"
+              >
+                Cancel
+              </button>
+              <button
+                id="submit-snippet-btn"
+                type="submit"
+                class="px-5 py-2 text-xs font-semibold text-[#0B0F19] bg-[#00E5FF] hover:bg-[#33EAFF] active:scale-[0.98] rounded-lg transition-all shadow-[0_0_12px_rgba(0,229,255,0.25)] flex items-center gap-1.5 focus:outline-none"
+              >
+                <span>Publish Snippet</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Code Studio & Online Compiler Modal -->
+    <div
+      id="code-studio-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-[#0B0F19]/90 backdrop-blur-md overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="w-full max-w-5xl my-4 rounded-xl bg-[#161D2F] border border-[#24324D] shadow-2xl overflow-hidden flex flex-col h-[92vh] max-h-[900px]">
+        
+        <!-- Studio Header -->
+        <div class="flex items-center justify-between border-b border-[#24324D] px-5 py-3 shrink-0 bg-[#161D2F]">
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg bg-[#0B0F19] border border-[#24324D] flex items-center justify-center text-[#00E5FF] text-xs font-bold">
+              ⚡
+            </div>
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Code Studio & Compiler</span>
+                <span class="text-[11px] font-normal text-slate-400 hidden sm:inline px-2 py-0.5 rounded bg-[#0B0F19] border border-[#24324D]">
+                  Live Toolchain Engine
+                </span>
+              </h2>
+            </div>
+          </div>
+
+          <!-- Studio Header Right: Language, Template, Close -->
+          <div class="flex items-center gap-2.5">
+            <!-- Language Select -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-slate-400 hidden sm:inline">Lang:</span>
+              <select
+                id="studio-lang-select"
+                class="bg-[#0B0F19] border border-[#24324D] text-xs text-[#00E5FF] font-medium rounded-lg px-2.5 py-1.5 focus:border-[#00E5FF] focus:outline-none"
+              >
+                <option value="javascript">JavaScript (V8 Node)</option>
+                <option value="typescript">TypeScript (esbuild)</option>
+                <option value="python">Python 3.10</option>
+                <option value="java">Java (OpenJDK 21)</option>
+                <option value="cpp">C++20 (Clang)</option>
+                <option value="c">C99 (GCC)</option>
+                <option value="html">HTML5</option>
+                <option value="css">CSS3</option>
+              </select>
+            </div>
+
+            <!-- Starter Template Dropdown -->
+            <button
+              id="studio-template-btn"
+              type="button"
+              class="px-2.5 py-1.5 text-xs text-slate-300 hover:text-white bg-[#0B0F19] border border-[#24324D] hover:border-[#00E5FF] rounded-lg transition-colors focus:outline-none"
+              title="Load standard boilerplate template"
+            >
+              Template
+            </button>
+
+            <!-- Close Studio -->
+            <button id="close-studio-modal-btn" type="button" class="text-slate-400 hover:text-white transition-colors p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Studio Main Body (Two Columns: Code Editor & Terminal) -->
+        <div class="flex-1 flex flex-col lg:flex-row min-h-0 bg-[#0B0F19]">
+          
+          <!-- Left Column: Code Editor -->
+          <div class="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-[#24324D] min-h-[280px]">
+            <!-- Editor Subheader -->
+            <div class="flex items-center justify-between px-4 py-2 bg-[#121826] border-b border-[#24324D] text-xs text-slate-400 shrink-0">
+              <div class="flex items-center gap-3">
+                <span id="studio-active-filename" class="font-mono text-[#00E5FF]">main.js</span>
+                <span id="studio-editor-stats" class="text-[11px] text-slate-500 font-mono">0 lines</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="studio-stdin-toggle-btn" type="button" class="text-[11px] text-slate-400 hover:text-white">
+                  + Stdin
+                </button>
+                <span class="text-slate-600">·</span>
+                <button id="studio-beautify-btn" type="button" class="text-[11px] text-[#00E5FF] hover:underline">
+                  Beautify
+                </button>
+                <span class="text-slate-600">·</span>
+                <button id="studio-clear-btn" type="button" class="text-[11px] text-slate-400 hover:text-red-400">
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <!-- Optional Stdin Input Bar (hidden by default) -->
+            <div id="studio-stdin-panel" class="hidden px-4 py-2 bg-[#0E1422] border-b border-[#24324D] text-xs">
+              <label for="studio-stdin-input" class="block text-[11px] font-mono text-slate-400 mb-1">Standard Input (stdin):</label>
+              <textarea id="studio-stdin-input" rows="2" placeholder="Inputs passed to stdin stream..." class="w-full bg-[#06080F] border border-[#24324D] rounded p-2 text-xs font-mono text-white focus:outline-none"></textarea>
+            </div>
+
+            <!-- Code Input Textarea with Line Numbers -->
+            <div class="flex-1 relative flex overflow-hidden bg-[#070A12]">
+              <div id="studio-line-numbers" class="w-12 select-none py-3 pr-2 text-right font-mono text-xs text-slate-600 bg-[#0B0F19]/50 border-r border-[#24324D]/50 overflow-hidden leading-relaxed shrink-0">
+                1
+              </div>
+              <textarea
+                id="studio-code-input"
+                class="flex-1 bg-transparent p-3 font-mono text-xs text-slate-100 placeholder-slate-600 focus:outline-none resize-none overflow-auto leading-relaxed selection:bg-[#00E5FF]/20"
+                placeholder="// Type or paste your code here..."
+                spellcheck="false"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Right Column: Compiler Execution & Terminal Output -->
+          <div class="w-full lg:w-[45%] flex flex-col bg-[#080C16] min-h-[240px]">
+            <!-- Terminal Header & Compile Trigger -->
+            <div class="flex items-center justify-between px-4 py-2 bg-[#121826] border-b border-[#24324D] text-xs shrink-0">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-semibold text-white">Execution Console</span>
+                <span id="studio-status-indicator" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">Ready</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  id="studio-compile-btn"
+                  type="button"
+                  class="px-3.5 py-1 text-xs font-semibold text-[#0B0F19] bg-[#00E5FF] hover:bg-[#33EAFF] active:scale-[0.98] rounded-md transition-all shadow-[0_0_10px_rgba(0,229,255,0.3)] flex items-center gap-1.5 focus:outline-none"
+                >
+                  <span>⚡ Compile & Run</span>
+                  <kbd class="hidden sm:inline text-[9px] font-mono bg-[#0B0F19]/30 px-1 py-0.2 rounded">⌘↵</kbd>
+                </button>
+              </div>
+            </div>
+
+            <!-- Execution Telemetry Strip -->
+            <div class="px-4 py-1.5 bg-[#0B0F19] border-b border-[#24324D]/60 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <div class="flex items-center gap-3 truncate">
+                <span id="studio-toolchain-badge" class="truncate text-slate-400">Toolchain: V8 / Node.js</span>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <span id="studio-time-badge" class="text-slate-500 tabular-nums">0ms</span>
+                <span id="studio-exit-badge" class="text-emerald-400 font-semibold">Exit 0</span>
+              </div>
+            </div>
+
+            <!-- Terminal Output Window -->
+            <div class="flex-1 overflow-auto p-4 bg-[#06080F] font-mono text-xs leading-relaxed flex flex-col justify-between">
+              <pre id="studio-terminal-output" class="text-slate-300 whitespace-pre-wrap select-text selection:bg-[#00E5FF]/20">Click "⚡ Compile & Run" or press Cmd+Enter to execute.</pre>
+              <div id="studio-diagnostics-text" class="text-[11px] text-slate-500 mt-3 pt-2 border-t border-[#24324D]/50 italic">
+                Ready for compiler execution.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Studio Footer: Direct Showcase Submission -->
+        <div class="px-5 py-3 bg-[#161D2F] border-t border-[#24324D] flex items-center justify-between shrink-0">
+          <div class="text-xs text-slate-400">
+            <span>Verified code can be published directly to CodeCanvas gallery.</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              id="studio-cancel-btn"
+              type="button"
+              class="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg transition-colors focus:outline-none"
+            >
+              Close Studio
+            </button>
+            <button
+              id="studio-submit-to-showcase-btn"
+              type="button"
+              class="px-4 py-1.5 text-xs font-semibold text-[#0B0F19] bg-[#00E5FF] hover:bg-[#33EAFF] rounded-lg transition-all shadow-[0_0_12px_rgba(0,229,255,0.25)] flex items-center gap-1.5 focus:outline-none"
+            >
+              <span>Publish to Showcase ➔</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Code View & Live Sandbox Playground Modal -->
+    <div
+      id="code-view-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-[#0B0F19]/85 backdrop-blur-md overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="w-full max-w-4xl my-4 rounded-xl bg-[#161D2F] border border-[#24324D] shadow-2xl overflow-hidden flex flex-col h-[90vh] max-h-[850px]">
+        
+        <!-- Modal Top Bar -->
+        <div class="flex items-center justify-between border-b border-[#24324D] px-5 py-3 shrink-0">
+          <div class="min-w-0 pr-3">
+            <h3 id="modal-view-title" class="text-sm sm:text-base font-bold text-white truncate">Snippet Title</h3>
+            <div id="modal-view-meta" class="flex items-center gap-2 text-xs text-slate-400 mt-0.5 truncate"></div>
+          </div>
+          
+          <!-- Actions Right -->
+          <div class="flex items-center gap-2 shrink-0">
+            <!-- Open in Compiler Studio -->
+            <button
+              id="modal-view-compiler-btn"
+              type="button"
+              class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[#00E5FF] text-[#0B0F19] hover:bg-[#33EAFF] transition-all shadow-[0_0_10px_rgba(0,229,255,0.2)] flex items-center gap-1.5 focus:outline-none"
+              title="Open snippet in Compiler Studio to run, edit, and re-compile"
+            >
+              <span>⚡ Run / Compile</span>
+            </button>
+
+            <!-- Fork Button -->
+            <button
+              id="modal-view-fork-btn"
+              type="button"
+              class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-[#0B0F19] border border-[#24324D] hover:border-[#00E5FF] text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"
+              title="Duplicate and create your own fork"
+            >
+              <svg class="w-3.5 h-3.5 text-[#00E5FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+              </svg>
+              <span class="hidden sm:inline">Fork</span>
+            </button>
+
+            <!-- Edit Button -->
+            <button
+              id="modal-view-edit-btn"
+              type="button"
+              class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-[#0B0F19] border border-[#24324D] hover:border-[#00E5FF] text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"
+              title="Edit snippet details"
+            >
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span class="hidden sm:inline">Edit</span>
+            </button>
+
+            <!-- Share Button -->
+            <button
+              id="modal-view-share-btn"
+              type="button"
+              class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-[#0B0F19] border border-[#24324D] hover:border-[#00E5FF] text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"
+              title="Copy shareable link"
+            >
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              <span class="hidden sm:inline">Share</span>
+            </button>
+
+            <!-- Copy Code -->
+            <button
+              id="modal-view-copy-btn"
+              type="button"
+              class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-[#0B0F19] border border-[#24324D] hover:border-[#00E5FF] text-slate-300 hover:text-white transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span class="copy-label">Copy</span>
+            </button>
+
+            <!-- Close Modal -->
+            <button id="close-code-view-modal" type="button" class="text-slate-400 hover:text-white transition-colors p-1 ml-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Bar: Code Inspector vs Live Runner Playground -->
+        <div class="flex items-center justify-between px-5 py-2 bg-[#0B0F19] border-b border-[#24324D] shrink-0 text-xs">
+          <div class="flex items-center gap-2">
+            <button
+              id="tab-code-btn"
+              type="button"
+              class="px-3 py-1 font-medium rounded-md transition-colors bg-[#161D2F] text-[#00E5FF] border border-[#00E5FF]/30"
+            >
+              Code Inspector
+            </button>
+            <button
+              id="tab-sandbox-btn"
+              type="button"
+              class="px-3 py-1 font-medium rounded-md transition-colors text-slate-400 hover:text-white flex items-center gap-1.5"
+            >
+              <span>Live Playground Runner</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-[#00E5FF]"></span>
+            </button>
+          </div>
+
+          <!-- Sandbox Execution Controls (visible when runner active) -->
+          <div id="sandbox-controls" class="hidden items-center gap-2">
+            <button
+              id="run-sandbox-btn"
+              type="button"
+              class="px-3 py-1 text-xs font-semibold text-[#0B0F19] bg-[#00E5FF] hover:bg-[#33EAFF] rounded-md transition-colors flex items-center gap-1"
+            >
+              <span>▶ Run</span>
+            </button>
+            <button
+              id="clear-console-btn"
+              type="button"
+              class="px-2 py-1 text-[11px] text-slate-400 hover:text-white rounded border border-[#24324D]"
+            >
+              Clear Logs
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel 1: Code View -->
+        <div id="code-inspector-panel" class="flex-1 overflow-auto p-5 bg-[#0B0F19]">
+          <pre id="modal-view-code" class="font-mono text-xs text-slate-200 leading-relaxed"></pre>
+        </div>
+
+        <!-- Panel 2: Live Playground Sandbox Runner (Iframe + Console Terminal) -->
+        <div id="sandbox-runner-panel" class="hidden flex-1 flex-col bg-[#0B0F19] overflow-hidden">
+          <!-- Sandboxed Iframe Container -->
+          <div class="flex-1 relative bg-[#06080F] border-b border-[#24324D]">
+            <iframe
+              id="sandbox-iframe"
+              sandbox="allow-scripts allow-modals"
+              class="w-full h-full border-0"
+              title="Live Sandbox Preview"
+            ></iframe>
+          </div>
+
+          <!-- Live Console Output Terminal -->
+          <div class="h-44 bg-[#0B0F19] p-3 flex flex-col font-mono text-xs">
+            <div class="flex items-center justify-between text-[11px] text-slate-500 pb-1 mb-1 border-b border-[#24324D]/60 uppercase tracking-wider">
+              <span>Execution Terminal Logs</span>
+              <span id="sandbox-status-text" class="text-[#00E5FF] normal-case">Ready</span>
+            </div>
+            <div id="sandbox-console-logs" class="flex-1 overflow-y-auto space-y-1 text-slate-300">
+              <div class="text-slate-600 italic">Click "Run" to execute snippet in sandboxed container...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div
+      id="toast-container"
+      class="fixed bottom-6 left-6 z-50 flex flex-col gap-2 pointer-events-none"
+      aria-live="polite"
+    ></div>
+
+    <!-- Client Routing & Dynamic Logic -->
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>
